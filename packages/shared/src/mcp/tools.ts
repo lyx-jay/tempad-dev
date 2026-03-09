@@ -171,9 +171,29 @@ export type ToolResultMap = {
   get_screenshot: GetScreenshotResult
   get_structure: GetStructureResult
   get_assets: GetAssetsResult
+  compress_image: CompressImageResult
 }
 
 export type ToolName = keyof ToolResultMap
+
+// compress_image
+export const CompressImageParametersSchema = z.object({
+  bytes: z.string().describe('Base64 encoded image bytes.'),
+  format: z.enum(['png', 'jpg', 'webp']).describe('Target format.'),
+  options: z
+    .object({
+      quality: z.number().min(0).max(1).optional(),
+      lossless: z.boolean().optional()
+    })
+    .optional()
+})
+
+export type CompressImageParametersInput = z.input<typeof CompressImageParametersSchema>
+export type CompressImageResult = {
+  bytes: string // Base64 encoded compressed bytes
+  format: 'png' | 'jpg' | 'webp'
+  size: number
+}
 
 export type ToolSchema<Name extends ToolName> = {
   name: Name

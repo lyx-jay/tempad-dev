@@ -26,6 +26,7 @@ export type Options = {
   scale: number
   variableDisplay: 'reference' | 'resolved' | 'both'
   mcpOn: boolean
+  activeTab: 'assets' | 'code'
   plugins: {
     [source: string]: PluginData
   }
@@ -47,6 +48,7 @@ export const options = useStorage<Options>('tempad-dev', {
   scale: 1,
   variableDisplay: 'reference',
   mcpOn: false,
+  activeTab: 'code',
   plugins: {},
   activePluginSource: null
 })

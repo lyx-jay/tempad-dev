@@ -7,6 +7,7 @@ import Minus from '@/components/icons/Minus.vue'
 import Plus from '@/components/icons/Plus.vue'
 import Preferences from '@/components/icons/Preferences.vue'
 import Panel from '@/components/Panel.vue'
+import AssetsSection from '@/components/sections/AssetsSection.vue'
 import CodeSection from '@/components/sections/CodeSection.vue'
 import ErrorSection from '@/components/sections/ErrorSection.vue'
 import MetaSection from '@/components/sections/MetaSection.vue'
@@ -29,6 +30,11 @@ const HINT_CHECK_INTERVAL = 500
 useFigmaAvailability()
 
 const HINT_IDLE_MS = 10000
+
+const tabs = [
+  { label: 'Assets', value: 'assets' },
+  { label: 'Code', value: 'code' }
+] as const
 
 function toggleMinimized() {
   options.value.minimized = !options.value.minimized
@@ -172,12 +178,61 @@ function activateMcp() {
     <template v-else>
       <PrefSection :collapsed="!options.prefOpen" />
       <MetaSection />
-      <CodeSection />
+      <div v-if="!options.minimized" class="tp-tabs-container">
+        <div
+          v-for="tab in tabs"
+          :key="tab.value"
+          class="tp-tab"
+          :class="{ 'tp-tab-active': options.activeTab === tab.value }"
+          @click="options.activeTab = tab.value"
+        >
+          {{ tab.label }}
+        </div>
+      </div>
+      <AssetsSection v-if="options.activeTab === 'assets'" />
+      <CodeSection v-else />
     </template>
   </Panel>
 </template>
 
 <style scoped>
+.tp-tabs-container {
+  display: flex;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-border);
+  gap: 24px;
+}
+
+.tp-tab {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tp-tab:hover {
+  color: var(--color-text);
+}
+
+.tp-tab-active {
+  color: var(--color-text);
+}
+
+.tp-tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-text);
+}
+
 .tp-main {
   transition:
     height 0.2s cubic-bezier(0.87, 0, 0.13, 1),
