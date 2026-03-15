@@ -9,7 +9,6 @@ import type {
 import type { ZodType } from 'zod'
 
 import {
-  CompressImageParametersSchema,
   GetAssetsParametersSchema,
   GetAssetsResultSchema,
   GetCodeParametersSchema,
@@ -118,12 +117,6 @@ export const TOOL_DEFS = [
     target: 'hub',
     outputSchema: GetAssetsResultSchema,
     exposed: false
-  }),
-  hubTool({
-    name: 'compress_image',
-    description: 'Compress image bytes using Squoosh (MozJPEG/OxiPNG).',
-    parameters: CompressImageParametersSchema,
-    target: 'hub'
   })
 ] as const
 
@@ -202,7 +195,7 @@ function createToolErrorResponse(toolName: string, error: unknown): CallToolResu
   }
 }
 
-export function formatBytes(bytes: number): string {
+function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`

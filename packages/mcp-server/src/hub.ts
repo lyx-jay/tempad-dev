@@ -1,15 +1,14 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type {
   AssetDescriptor,
-  CompressImageParametersInput,
-  CompressImageResult,
   GetAssetsParametersInput,
   GetAssetsResult,
   RegisteredMessage,
   StateMessage,
   ToolCallMessage,
   ToolName,
-  ToolResultMap
+  ToolResultMap,
+  ToolResultMessage
 } from '@tempad-dev/shared'
 import type { RawData } from 'ws'
 import type { ZodType } from 'zod'
@@ -33,16 +32,10 @@ import { createAssetHttpServer } from './asset-http-server'
 import { createAssetStore } from './asset-store'
 import { buildAssetFilename } from './asset-utils'
 import { getMcpServerConfig } from './config'
-import { compressImage } from './image-processing'
 import MCP_INSTRUCTIONS from './instructions.md?raw'
 import { register, resolve, reject, cleanupForExtension, cleanupAll } from './request'
 import { PACKAGE_VERSION, log, RUNTIME_DIR, SOCK_PATH, ensureDir } from './shared'
-import {
-  TOOL_DEFS,
-  coercePayloadToToolResponse,
-  createToolErrorResponse,
-  formatBytes
-} from './tools'
+import { TOOL_DEFS, coercePayloadToToolResponse, createToolErrorResponse } from './tools'
 
 const SHUTDOWN_TIMEOUT = 2000
 const { wsPortCandidates, toolTimeoutMs, maxPayloadBytes, autoActivateGraceMs, assetTtlMs } =
@@ -83,21 +76,15 @@ function enrichToolDefinition(tool: ToolMetadataEntry): RegisteredToolDefinition
     return tool
   }
 
-  if (tool.name === 'get_assets') {
-    return {
-      ...tool,
-      handler: handleGetAssets as any
-    } as HubToolWithHandler
+  switch (tool.name) {
+    case 'get_assets':
+      return {
+        ...tool,
+        handler: handleGetAssets
+      } satisfies HubToolWithHandler
+    default:
+      throw new Error('No handler configured for hub tool.')
   }
-
-  if (tool.name === 'compress_image') {
-    return {
-      ...tool,
-      handler: handleCompressImage as any
-    } as HubToolWithHandler
-  }
-
-  throw new Error('No handler configured for hub tool.')
 }
 
 const TOOL_DEFINITIONS: ReadonlyArray<RegisteredToolDefinition> = TOOL_DEFS.map((tool) =>
@@ -388,37 +375,6 @@ async function handleGetAssets({ hashes }: GetAssetsParametersInput): Promise<To
   }
 }
 
-async function handleCompressImage(
-  args: CompressImageParametersInput
-): Promise<ToolResponse> {
-  try {
-    const inputBuffer = Buffer.from(args.bytes, 'base64')
-    const { buffer: outputBuffer, size } = await compressImage(
-      inputBuffer,
-      args.format,
-      args.options
-    )
-
-    const result: CompressImageResult = {
-      bytes: outputBuffer.toString('base64'),
-      format: args.format,
-      size
-    }
-
-    return {
-      content: [
-        {
-          type: 'text' as const,
-          text: `Compressed ${args.format} image: ${formatBytes(inputBuffer.length)} -> ${formatBytes(size)}.`
-        }
-      ],
-      structuredContent: result
-    }
-  } catch (error) {
-    return createToolErrorResponse('compress_image', error)
-  }
-}
-
 function getActiveId(): string | null {
   return extensions.find((e) => e.active)?.id ?? null
 }
@@ -619,7 +575,7 @@ wss.on('connection', (ws) => {
   broadcastState()
   scheduleAutoActivate()
 
-  ws.on('message', async (raw: RawData, isBinary: boolean) => {
+  ws.on('message', (raw: RawData, isBinary: boolean) => {
     if (isBinary) {
       log.warn({ extId: ext.id }, 'Unexpected binary message received.')
       return
@@ -640,64 +596,35 @@ wss.on('connection', (ws) => {
       log.warn({ error: parseResult.error.flatten(), extId: ext.id }, 'Invalid message shape.')
       return
     }
-    const msg = parseResult.data as any
+    const msg = parseResult.data
 
-    if (msg.type === 'activate') {
-      setActive(ext.id)
-      log.info({ id: ext.id }, 'Extension activated.')
-      broadcastState()
-      scheduleAutoActivate()
-      return
-    }
-
-    if (msg.type === 'compressRequest') {
-      const { id, payload } = msg
-      try {
-        const inputBuffer = Buffer.from(payload.bytes, 'base64')
-        const { buffer: outputBuffer, size } = await compressImage(
-          inputBuffer,
-          payload.format,
-          payload.options
-        )
-        const response = {
-          type: 'compressResponse' as const,
-          id,
-          payload: {
-            bytes: outputBuffer.toString('base64'),
-            format: payload.format,
-            size
-          }
-        }
-        ext.ws.send(JSON.stringify(response))
-      } catch (error) {
-        const response = {
-          type: 'compressResponse' as const,
-          id,
-          error: error instanceof Error ? error.message : String(error)
-        }
-        ext.ws.send(JSON.stringify(response))
+    switch (msg.type) {
+      case 'activate': {
+        setActive(ext.id)
+        log.info({ id: ext.id }, 'Extension activated.')
+        broadcastState()
+        scheduleAutoActivate()
+        break
       }
-      return
-    }
-
-    if (msg.type === 'toolResult') {
-      const { id, payload, error } = msg
-      if (error) {
-        const normalized = coerceToolError(error)
-        log.warn(
-          {
-            toolReq: id,
-            extId: ext.id,
-            code: getRecordProperty(normalized, 'code'),
-            message: normalized.message
-          },
-          'Received tool error from extension.'
-        )
-        reject(id, normalized)
-      } else {
-        resolve(id, payload)
+      case 'toolResult': {
+        const { id, payload, error } = msg as ToolResultMessage
+        if (error) {
+          const normalized = coerceToolError(error)
+          log.warn(
+            {
+              toolReq: id,
+              extId: ext.id,
+              code: getRecordProperty(normalized, 'code'),
+              message: normalized.message
+            },
+            'Received tool error from extension.'
+          )
+          reject(id, normalized)
+        } else {
+          resolve(id, payload)
+        }
+        break
       }
-      return
     }
   })
 

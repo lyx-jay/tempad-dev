@@ -8,6 +8,7 @@ import Check from '@/components/icons/Check.vue'
 import Download from '@/components/icons/Download.vue'
 import Section from '@/components/Section.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
+import { useToast } from '@/composables'
 import { selectedNode } from '@/ui/state'
 import { compressImageWithMcp } from '@/utils/compression'
 
@@ -15,7 +16,7 @@ const formatOptions = [
   { label: 'PNG', value: 'PNG' },
   { label: 'SVG', value: 'SVG' },
   { label: 'JPG', value: 'JPG' }
-] as const
+]
 
 const scaleOptions = [
   { label: '1x', value: 1 },
@@ -43,7 +44,7 @@ async function updatePreview() {
       format: 'PNG',
       constraint: { type: 'SCALE', value: 1 }
     })
-    const blob = new Blob([bytes], { type: 'image/png' })
+    const blob = new Blob([bytes as BlobPart], { type: 'image/png' })
     if (previewUrl.value) {
       URL.revokeObjectURL(previewUrl.value)
     }
@@ -92,7 +93,7 @@ async function addToAssets() {
       format: 'PNG',
       constraint: { type: 'SCALE', value: 0.2 }
     })
-    const blob = new Blob([bytes], { type: 'image/png' })
+    const blob = new Blob([bytes as BlobPart], { type: 'image/png' })
     const preview = URL.createObjectURL(blob)
 
     exportableAssets.value.push({
@@ -128,7 +129,7 @@ async function getAssetData(node: SceneNode, format: 'PNG' | 'SVG' | 'JPG', scal
         lossless: format === 'PNG'
       })
       return {
-        blob: new Blob([result.bytes], { type: `image/${format.toLowerCase()}` }),
+        blob: new Blob([result.bytes as BlobPart], { type: `image/${format.toLowerCase()}` }),
         filename: `${node.name}${scale > 1 ? `@${scale}x` : ''}.${format.toLowerCase()}`
       }
     } catch (error) {
@@ -137,7 +138,7 @@ async function getAssetData(node: SceneNode, format: 'PNG' | 'SVG' | 'JPG', scal
   }
 
   return {
-    blob: new Blob([bytes], { type: `image/${format.toLowerCase()}` }),
+    blob: new Blob([bytes as BlobPart], { type: `image/${format.toLowerCase()}` }),
     filename: `${node.name}${scale > 1 ? `@${scale}x` : ''}.${format.toLowerCase()}`
   }
 }
@@ -152,14 +153,46 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 async function exportAll() {
+  const toast = useToast()
   const zip = new JSZip()
   const assetsToExport = []
 
+  if (exportableAssets.value.length === 0) {
+    toast.show('No assets to export.')
+    return
+  }
+
+  if (exportScales.value.length === 0) {
+    toast.show('No scales selected for export.')
+    return
+  }
+
+  const usedFilenames = new Set<string>()
+
   for (const asset of exportableAssets.value) {
     for (const scale of exportScales.value) {
-      const data = await getAssetData(asset.node, exportFormat.value, scale)
-      assetsToExport.push(data)
-      zip.file(data.filename, data.blob)
+      try {
+        const data = await getAssetData(asset.node, exportFormat.value, scale)
+        assetsToExport.push(data)
+
+        let filename = data.filename
+        if (usedFilenames.has(filename)) {
+          const dotIndex = filename.lastIndexOf('.')
+          const base = dotIndex === -1 ? filename : filename.slice(0, dotIndex)
+          const ext = dotIndex === -1 ? '' : filename.slice(dotIndex)
+          let i = 1
+          do {
+            filename = `${base}-${i}${ext}`
+            i += 1
+          } while (usedFilenames.has(filename))
+        }
+
+        usedFilenames.add(filename)
+        zip.file(filename, data.blob)
+      } catch (error) {
+        console.error(`Failed to export ${asset.name} at ${scale}x`, error)
+        toast.show(`Failed to export ${asset.name} at ${scale}x`)
+      }
     }
   }
 
@@ -168,8 +201,13 @@ async function exportAll() {
   if (assetsToExport.length === 1) {
     downloadBlob(assetsToExport[0].blob, assetsToExport[0].filename)
   } else {
-    const content = await zip.generateAsync({ type: 'blob' })
-    downloadBlob(content, `assets_${Date.now()}.zip`)
+    try {
+      const content = await zip.generateAsync({ type: 'blob' })
+      downloadBlob(content, `assets_${Date.now()}.zip`)
+    } catch (error) {
+      console.error('Failed to generate ZIP', error)
+      toast.show('Failed to generate ZIP archive')
+    }
   }
 }
 </script>

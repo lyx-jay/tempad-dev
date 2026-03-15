@@ -17,7 +17,7 @@ export default defineConfig({
   vite: (env) => ({
     plugins: [cssInjectedByJsPlugin()],
     optimizeDeps: {
-      include: []
+      exclude: []
     },
     define: {
       __DEV__: env.mode === 'development'

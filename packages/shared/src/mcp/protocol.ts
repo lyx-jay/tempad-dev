@@ -27,6 +27,12 @@ export const ToolCallMessageSchema = z.object({
   payload: ToolCallPayloadSchema
 })
 
+export const MessageToExtensionSchema = z.discriminatedUnion('type', [
+  RegisteredMessageSchema,
+  StateMessageSchema,
+  ToolCallMessageSchema
+])
+
 // Messages from extension to hub
 export const ActivateMessageSchema = z.object({
   type: z.literal('activate')
@@ -39,45 +45,9 @@ export const ToolResultMessageSchema = z.object({
   error: z.unknown().optional()
 })
 
-export const CompressRequestMessageSchema = z.object({
-  type: z.literal('compressRequest'),
-  id: z.string(),
-  payload: z.object({
-    bytes: z.string(),
-    format: z.enum(['png', 'jpg', 'webp']),
-    options: z
-      .object({
-        quality: z.number().optional(),
-        lossless: z.boolean().optional()
-      })
-      .optional()
-  })
-})
-
-export const CompressResponseMessageSchema = z.object({
-  type: z.literal('compressResponse'),
-  id: z.string(),
-  payload: z
-    .object({
-      bytes: z.string(),
-      format: z.enum(['png', 'jpg', 'webp']),
-      size: z.number()
-    })
-    .optional(),
-  error: z.string().optional()
-})
-
 export const MessageFromExtensionSchema = z.discriminatedUnion('type', [
   ActivateMessageSchema,
-  ToolResultMessageSchema,
-  CompressRequestMessageSchema
-])
-
-export const MessageToExtensionSchema = z.discriminatedUnion('type', [
-  RegisteredMessageSchema,
-  StateMessageSchema,
-  ToolCallMessageSchema,
-  CompressResponseMessageSchema
+  ToolResultMessageSchema
 ])
 
 export type RegisteredMessage = z.infer<typeof RegisteredMessageSchema>
@@ -87,8 +57,6 @@ export type ToolCallMessage = z.infer<typeof ToolCallMessageSchema>
 export type MessageToExtension = z.infer<typeof MessageToExtensionSchema>
 export type ActivateMessage = z.infer<typeof ActivateMessageSchema>
 export type ToolResultMessage = z.infer<typeof ToolResultMessageSchema>
-export type CompressRequestMessage = z.infer<typeof CompressRequestMessageSchema>
-export type CompressResponseMessage = z.infer<typeof CompressResponseMessageSchema>
 export type MessageFromExtension = z.infer<typeof MessageFromExtensionSchema>
 
 function parseJsonWithSchema<T>(data: string, schema: ZodType<T>): T | null {

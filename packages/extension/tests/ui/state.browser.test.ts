@@ -19,6 +19,7 @@ function createDefaultOptions() {
     scale: 1,
     variableDisplay: 'reference' as const,
     mcpOn: false,
+    activeTab: 'code' as const,
     plugins: {},
     activePluginSource: null as string | null
   }
