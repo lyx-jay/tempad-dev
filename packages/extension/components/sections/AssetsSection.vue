@@ -26,7 +26,7 @@ const scaleOptions = [
 ] as const
 
 const exportFormat = useStorage<'PNG' | 'SVG' | 'JPG'>('tempad-export-format', 'PNG')
-const exportScales = useStorage<number[]>('tempad-export-scales', [1])
+const exportScales = useStorage<number>('tempad-export-scales', 1)
 const compressImage = useStorage<boolean>('tempad-export-compress', true)
 
 const previewUrl = ref<string | null>(null)
@@ -64,12 +64,7 @@ onUnmounted(() => {
 })
 
 function toggleScale(scale: number) {
-  const index = exportScales.value.indexOf(scale)
-  if (index === -1) {
-    exportScales.value.push(scale)
-  } else if (exportScales.value.length > 1) {
-    exportScales.value.splice(index, 1)
-  }
+  exportScales.value = scale
 }
 
 interface ExportableAsset {
@@ -162,37 +157,35 @@ async function exportAll() {
     return
   }
 
-  if (exportScales.value.length === 0) {
-    toast.show('No scales selected for export.')
+  if (!exportScales.value) {
+    toast.show('No scale selected for export.')
     return
   }
 
   const usedFilenames = new Set<string>()
 
   for (const asset of exportableAssets.value) {
-    for (const scale of exportScales.value) {
-      try {
-        const data = await getAssetData(asset.node, exportFormat.value, scale)
-        assetsToExport.push(data)
+    try {
+      const data = await getAssetData(asset.node, exportFormat.value, exportScales.value)
+      assetsToExport.push(data)
 
-        let filename = data.filename
-        if (usedFilenames.has(filename)) {
-          const dotIndex = filename.lastIndexOf('.')
-          const base = dotIndex === -1 ? filename : filename.slice(0, dotIndex)
-          const ext = dotIndex === -1 ? '' : filename.slice(dotIndex)
-          let i = 1
-          do {
-            filename = `${base}-${i}${ext}`
-            i += 1
-          } while (usedFilenames.has(filename))
-        }
-
-        usedFilenames.add(filename)
-        zip.file(filename, data.blob)
-      } catch (error) {
-        console.error(`Failed to export ${asset.name} at ${scale}x`, error)
-        toast.show(`Failed to export ${asset.name} at ${scale}x`)
+      let filename = data.filename
+      if (usedFilenames.has(filename)) {
+        const dotIndex = filename.lastIndexOf('.')
+        const base = dotIndex === -1 ? filename : filename.slice(0, dotIndex)
+        const ext = dotIndex === -1 ? '' : filename.slice(dotIndex)
+        let i = 1
+        do {
+          filename = `${base}-${i}${ext}`
+          i += 1
+        } while (usedFilenames.has(filename))
       }
+
+      usedFilenames.add(filename)
+      zip.file(filename, data.blob)
+    } catch (error) {
+      console.error(`Failed to export ${asset.name}`, error)
+      toast.show(`Failed to export ${asset.name}`)
     }
   }
 
@@ -234,7 +227,7 @@ async function exportAll() {
           </div>
           <Transition name="tp-fade">
             <button v-if="isHovering" class="tp-assets-add-btn" @click="addToAssets">
-              Add to Assets (添加到切图列表)
+              Add to Assets
             </button>
           </Transition>
         </div>
@@ -258,10 +251,10 @@ async function exportAll() {
               v-for="option in scaleOptions"
               :key="option.value"
               class="tp-assets-scale-btn"
-              :class="{ 'tp-assets-scale-btn-active': exportScales.includes(option.value) }"
+              :class="{ 'tp-assets-scale-btn-active': exportScales === option.value }"
               @click="toggleScale(option.value)"
             >
-              <Check v-if="exportScales.includes(option.value)" class="tp-assets-scale-check" />
+              <Check v-if="exportScales === option.value" class="tp-assets-scale-check" />
               {{ option.label }}
             </button>
           </div>
@@ -293,7 +286,7 @@ async function exportAll() {
               </div>
               <span class="tp-assets-item-name tp-ellipsis">{{ asset.name }}</span>
             </div>
-            <IconButton @click="exportAsset(asset.node, exportFormat, exportScales[0])">
+            <IconButton @click="exportAsset(asset.node, exportFormat, exportScales)">
               <Download />
             </IconButton>
           </div>
