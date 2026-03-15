@@ -5,7 +5,7 @@ import Badge from '@/components/Badge.vue'
 import IconButton from '@/components/IconButton.vue'
 import Minus from '@/components/icons/Minus.vue'
 import Plus from '@/components/icons/Plus.vue'
-import Preferences from '@/components/icons/Preferences.vue'
+// import Preferences from '@/components/icons/Preferences.vue'
 import Panel from '@/components/Panel.vue'
 import AssetsSection from '@/components/sections/AssetsSection.vue'
 import CodeSection from '@/components/sections/CodeSection.vue'
@@ -159,7 +159,7 @@ function activateMcp() {
         </Badge>
       </div>
       <div class="tp-row tp-gap">
-        <IconButton
+        <!-- <IconButton
           v-if="runtimeMode !== 'unavailable' && !options.minimized"
           title="Preferences"
           toggle
@@ -167,7 +167,7 @@ function activateMcp() {
           @dblclick.stop
         >
           <Preferences class="tp-panel-header-icon" />
-        </IconButton>
+        </IconButton> -->
         <IconButton @click="toggleMinimized">
           <Plus v-if="options.minimized" />
           <Minus v-else />
