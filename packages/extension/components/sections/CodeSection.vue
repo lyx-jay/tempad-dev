@@ -6,6 +6,7 @@ import Code from '@/components/Code.vue'
 import IconButton from '@/components/IconButton.vue'
 import Preview from '@/components/icons/Preview.vue'
 import Section from '@/components/Section.vue'
+import PrefSection from '@/components/sections/PrefSection.vue'
 import { selection, selectedNode, options, selectedTemPadComponent, activePlugin } from '@/ui/state'
 import { generateCodeBlocksForNode } from '@/utils'
 
@@ -65,6 +66,7 @@ function open() {
         }}</Badge>
       </div>
     </template>
+    <PrefSection />
     <Code
       v-if="componentCode"
       class="tp-code-code"

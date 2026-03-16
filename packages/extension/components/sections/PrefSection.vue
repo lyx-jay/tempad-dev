@@ -3,25 +3,25 @@ import IconButton from '@/components/IconButton.vue'
 import Inspect from '@/components/icons/Inspect.vue'
 import Measure from '@/components/icons/Measure.vue'
 import Section from '@/components/Section.vue'
-import McpSection from '@/components/sections/McpSection.vue'
-import PluginsSection from '@/components/sections/PluginsSection.vue'
+// import McpSection from '@/components/sections/McpSection.vue'
+// import PluginsSection from '@/components/sections/PluginsSection.vue'
 import Select, { type SelectOption } from '@/components/Select.vue'
 import { useSelectAll } from '@/composables'
 import { options } from '@/ui/state'
 
-const root = ref<InstanceType<typeof Section> | null>(null)
+// const root = ref<InstanceType<typeof Section> | null>(null)
 
-watch(
-  () => options.value.prefOpen,
-  (open) => {
-    if (open) {
-      root.value?.$el.scrollIntoView()
-    }
-  },
-  {
-    flush: 'post'
-  }
-)
+// watch(
+//   () => options.value.prefOpen,
+//   (open) => {
+//     if (open) {
+//       root.value?.$el.scrollIntoView()
+//     }
+//   },
+//   {
+//     flush: 'post'
+//   }
+// )
 
 const fontSizeInput = useTemplateRef('fontSizeInput')
 useSelectAll(fontSizeInput)
@@ -42,7 +42,7 @@ const variableDisplayOptions = [
 </script>
 
 <template>
-  <Section ref="root" class="tp-pref">
+  <Section class="tp-pref">
     <div class="tp-grid tp-grid-2">
       <div class="tp-grid-row tp-pref-field">
         <label>Tools</label>
@@ -95,8 +95,8 @@ const variableDisplayOptions = [
         />
       </div>
     </div>
-    <McpSection class="tp-pref-mcp" />
-    <PluginsSection class="tp-pref-plugins" />
+    <!-- <McpSection class="tp-pref-mcp" /> -->
+    <!-- <PluginsSection class="tp-pref-plugins" /> -->
   </Section>
 </template>
 

@@ -276,7 +276,7 @@ async function exportAll() {
       </div>
 
       <!-- Exportable Assets List -->
-      <div class="tp-assets-list-section">
+      <div class="tp-assets-list-section" v-if="exportableAssets.length">
         <div class="tp-assets-list-header">Exportable Assets</div>
         <div class="tp-assets-list">
           <div v-for="asset in exportableAssets" :key="asset.id" class="tp-assets-item">

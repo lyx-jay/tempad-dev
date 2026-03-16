@@ -177,7 +177,9 @@ function activateMcp() {
     <ErrorSection v-if="runtimeMode === 'unavailable'" />
     <template v-else>
       <PrefSection :collapsed="!options.prefOpen" />
-      <MetaSection />
+      <div class="tp-meta">
+        <MetaSection />
+      </div>
       <div v-if="!options.minimized" class="tp-tabs-container">
         <div
           v-for="tab in tabs"
@@ -201,6 +203,10 @@ function activateMcp() {
   padding: 0 16px;
   border-bottom: 1px solid var(--color-border);
   gap: 24px;
+}
+
+.tp-meta {
+  border-bottom: 1px solid var(--color-border);
 }
 
 .tp-tab {
