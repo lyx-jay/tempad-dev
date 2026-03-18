@@ -51,19 +51,22 @@ globalThis.onmessage = async ({ data }: MessageEvent<Request>) => {
     ...rest
   } = plugin?.code ?? {}
 
-  if (componentOptions && component) {
+  if (
+    componentOptions &&
+    (component || typeof componentOptions.transformComponent === 'function')
+  ) {
     const { lang, transformComponent } = componentOptions
     let componentCode = ''
 
     if (typeof transformComponent === 'function') {
-      const result = transformComponent({ component })
+      const result = transformComponent({ component, style, options })
       if (typeof result === 'string') {
         componentCode = result
       } else if (result) {
         devComponent = result
         componentCode = stringifyComponent(result, lang ?? 'jsx')
       }
-    } else {
+    } else if (component) {
       componentCode = serializeComponent(component, { lang }, { transformComponent })
     }
 

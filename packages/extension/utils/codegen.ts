@@ -58,7 +58,7 @@ export async function generateCodeBlocksForNode(
   // Resolve fill and stroke styles that use CSS variables
   style = await resolveStylesFromNode(style, node)
 
-  const component = getDesignComponent(node)
+  const component = await getDesignComponent(node)
   const serializeOptions: SerializeOptions = {
     ...workerUnitOptions(config),
     variableDisplay: opts?.variableDisplay

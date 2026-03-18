@@ -175,7 +175,11 @@ describe('codegen/worker', () => {
       }
     })
 
-    expect(transformComponent).toHaveBeenCalledWith({ component: { name: 'Card' } })
+    expect(transformComponent).toHaveBeenCalledWith({
+      component: { name: 'Card' },
+      style: { color: 'blue' },
+      options: baseOptions
+    })
     expect(mocks.serializeComponent).not.toHaveBeenCalled()
     expect(mocks.postMessage).toHaveBeenCalledWith({
       id: 3,
@@ -342,6 +346,91 @@ describe('codegen/worker', () => {
         })
       })
     )
+  })
+
+  it('invokes transformComponent even without a design component', async () => {
+    const transformComponent = vi.fn(() => '<div class="flex" />')
+    mocks.evaluate.mockResolvedValueOnce({
+      default: {
+        name: 'style-only plugin',
+        code: {
+          component: {
+            lang: 'vue',
+            title: 'Vue Component',
+            transformComponent
+          },
+          css: false,
+          js: false
+        }
+      }
+    })
+
+    await importWorker()
+
+    await dispatch({
+      id: 7,
+      payload: {
+        style: { display: 'flex', color: 'red' },
+        options: baseOptions,
+        pluginCode: 'export default {}'
+      }
+    })
+
+    expect(transformComponent).toHaveBeenCalledWith({
+      component: undefined,
+      style: { display: 'flex', color: 'red' },
+      options: baseOptions
+    })
+    expect(mocks.postMessage).toHaveBeenCalledWith({
+      id: 7,
+      payload: {
+        pluginName: 'style-only plugin',
+        codeBlocks: [
+          {
+            name: 'component',
+            title: 'Vue Component',
+            lang: 'vue',
+            code: '<div class="flex" />'
+          }
+        ]
+      }
+    })
+  })
+
+  it('skips component block when no component and transformComponent is not a function', async () => {
+    mocks.evaluate.mockResolvedValueOnce({
+      default: {
+        name: 'non-fn plugin',
+        code: {
+          component: {
+            lang: 'jsx',
+            transformComponent: { fallback: true }
+          },
+          css: false,
+          js: false
+        }
+      }
+    })
+
+    await importWorker()
+
+    await dispatch({
+      id: 8,
+      payload: {
+        style: { color: 'red' },
+        options: baseOptions,
+        pluginCode: 'export default {}'
+      }
+    })
+
+    expect(mocks.serializeComponent).not.toHaveBeenCalled()
+    expect(mocks.postMessage).toHaveBeenCalledWith({
+      id: 8,
+      payload: {
+        pluginName: 'non-fn plugin',
+        codeBlocks: []
+      }
+    })
   })
 
   it('generates default css/js blocks when plugin is not provided', async () => {

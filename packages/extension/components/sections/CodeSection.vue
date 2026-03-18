@@ -22,7 +22,7 @@ const playButtonTitle = computed(() =>
 
 async function updateCode() {
   const node = selectedNode.value
-
+  console.log('node', node)
   if (node == null || selection.value.length > 1) {
     codeBlocks.value = []
     return

@@ -1,6 +1,7 @@
 import type { Fill, Variable } from '@tempad-dev/plugins'
 
 import { RAW_TAG_NAME } from '@tempad-dev/plugins'
+import { resolveStylesFromNode } from '@tempad-dev/shared'
 
 import type {
   SupportedLang,
@@ -15,7 +16,7 @@ import { rgbToHex } from './color'
 import { prune } from './object'
 import { camelToKebab, escapeHTML, looseEscapeHTML, stringify, indentAll } from './string'
 
-export function getDesignComponent(node: SceneNode): DesignComponent | null {
+export async function getDesignComponent(node: SceneNode): Promise<DesignComponent | null> {
   if (!('componentProperties' in node)) {
     return null
   }
@@ -49,11 +50,22 @@ export function getDesignComponent(node: SceneNode): DesignComponent | null {
     properties,
     visible: node.visible,
     mainComponent: main,
-    children: getChildren(node) ?? []
+    children: (await getChildren(node)) ?? []
   }
 }
 
-function getChildren(node: SceneNode): DesignNode[] | null {
+async function getNodeStyle(node: SceneNode): Promise<Record<string, string> | undefined> {
+  if ('getCSSAsync' in node && typeof node.getCSSAsync === 'function') {
+    let style = await node.getCSSAsync()
+    if (style && Object.keys(style).length > 0) {
+      style = await resolveStylesFromNode(style, node)
+      return style
+    }
+  }
+  return undefined
+}
+
+async function getChildren(node: SceneNode): Promise<DesignNode[] | null> {
   if (!('children' in node)) {
     return null
   }
@@ -63,8 +75,9 @@ function getChildren(node: SceneNode): DesignNode[] | null {
     const { visible } = child
     switch (child.type) {
       case 'INSTANCE': {
-        const component = getDesignComponent(child)
+        const component = await getDesignComponent(child)
         if (component) {
+          component.style = await getNodeStyle(child)
           result.push(component)
         }
         break
@@ -74,7 +87,8 @@ function getChildren(node: SceneNode): DesignNode[] | null {
           name: child.name,
           type: 'TEXT',
           visible,
-          characters: child.characters
+          characters: child.characters,
+          style: await getNodeStyle(child)
         })
         break
       }
@@ -84,7 +98,8 @@ function getChildren(node: SceneNode): DesignNode[] | null {
           name: child.name,
           type: child.type,
           visible,
-          children: getChildren(child) ?? []
+          children: (await getChildren(child)) ?? [],
+          style: await getNodeStyle(child)
         })
         break
       }
@@ -373,7 +388,11 @@ export function serializeComponent(
   { transformComponent }: TransformOptions = {}
 ) {
   if (typeof transformComponent === 'function') {
-    const result = transformComponent({ component })
+    const result = transformComponent({
+      component,
+      style: {},
+      options: { useRem: false, rootFontSize: 16, scale: 1 }
+    })
     if (typeof result === 'string') {
       return result
     }

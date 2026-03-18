@@ -28,12 +28,12 @@ function createNode(
 }
 
 describe('utils/component', () => {
-  it('returns null for nodes without component properties', () => {
+  it('returns null for nodes without component properties', async () => {
     const frame = createNode('FRAME', 'frame-1')
-    expect(getDesignComponent(frame)).toBeNull()
+    expect(await getDesignComponent(frame)).toBeNull()
   })
 
-  it('extracts design component data with instance swap and vector fills', () => {
+  it('extracts design component data with instance swap and vector fills', async () => {
     const getNodeById = vi.fn((id: string) => {
       if (id === 'swap-target') {
         return { type: 'COMPONENT', name: 'Icon/Arrow' }
@@ -80,7 +80,7 @@ describe('utils/component', () => {
       [group]
     )
 
-    const result = getDesignComponent(instance)
+    const result = await getDesignComponent(instance)
 
     expect(result).toMatchObject({
       name: 'instance-1',

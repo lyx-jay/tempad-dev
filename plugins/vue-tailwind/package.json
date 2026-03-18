@@ -1,0 +1,19 @@
+{
+  "name": "tempad-dev-plugin-vue-tailwind",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TemPad Dev plugin: Figma nodes to Vue 3 + Tailwind CSS components",
+  "type": "module",
+  "main": "dist/index.mjs",
+  "scripts": {
+    "build": "tsup"
+  },
+  "dependencies": {
+    "@tempad-dev/plugins": "^0.6.1",
+    "transform-to-tailwindcss-core": "^0.0.42"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  }
+}

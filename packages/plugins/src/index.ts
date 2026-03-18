@@ -20,6 +20,9 @@ interface DesignNodeBase {
 
   /** Whether the node is visible in the current document. */
   visible: boolean
+
+  /** CSS style properties resolved from the Figma node. */
+  style?: Record<string, string>
 }
 
 /**
@@ -72,6 +75,11 @@ export interface Variable {
   /** Default value for the variable if defined. */
   value: string
 }
+
+/**
+ * How to display CSS variable references in generated code.
+ */
+export type VariableDisplayMode = 'reference' | 'resolved' | 'both'
 
 /**
  * Fill style as either a literal color or a variable.
@@ -215,9 +223,24 @@ interface TransformPxParams extends TransformBaseParams {
  */
 interface TransformComponentParams {
   /**
-   * The design component
+   * The design component (only available when the selected node is a component instance)
    */
-  component: DesignComponent
+  component?: DesignComponent
+
+  /**
+   * Resolved CSS style from the selected node (after variable resolution)
+   */
+  style: Record<string, string>
+
+  /**
+   * Serialization options (unit/scale/variable display)
+   */
+  options: {
+    useRem: boolean
+    rootFontSize: number
+    scale: number
+    variableDisplay?: VariableDisplayMode
+  }
 }
 
 /**

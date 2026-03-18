@@ -66,7 +66,9 @@ describe('utils/codegen', () => {
     mocked.createWorkerRequester.mockReturnValue(request)
 
     const style = { color: 'red' }
-    const component = { name: 'Button' } as unknown as ReturnType<typeof mocked.getDesignComponent>
+    const component = { name: 'Button' } as unknown as Awaited<
+      ReturnType<typeof mocked.getDesignComponent>
+    >
     const options = { useRem: false, rootFontSize: 16, scale: 1 }
 
     const result = await codegen(style, component, options, 'plugin()', true)
@@ -108,7 +110,7 @@ describe('utils/codegen', () => {
     mocked.resolveStylesFromNode.mockResolvedValue(resolvedStyle)
 
     const component = { name: 'Card' }
-    mocked.getDesignComponent.mockReturnValue(component)
+    mocked.getDesignComponent.mockResolvedValue(component)
 
     const node = {
       getCSSAsync: vi.fn().mockResolvedValue(rawStyle)
